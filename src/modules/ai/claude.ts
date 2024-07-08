@@ -57,7 +57,7 @@ class Claude {
             input_schema: func.parameters,
           })),
           tool_choice: { type: "auto" },
-          temperature: 0.4,
+          temperature: 0.5,
           max_tokens: 4000,
         },
         {

@@ -14,7 +14,7 @@ export const handleIssues = (app: Probot) => {
     return console.log("ISSUES are disabled!");
   }
 
-  app.on(["issues.reopened", "issues.labeled"], async (context: any) => {
+  app.on(["issues.reopened", "issues.labeled", "issues.opened"], async (context: any) => {
     const { octokit } = context;
     const {
       payload: {
@@ -75,11 +75,9 @@ export const handleIssues = (app: Probot) => {
             3. Make code modifications to address the issue.
             4. Commit changes and create a new pull request against the default branch.
             If the issue is complex, comment on it explaining why a pull request can't be made now.
-            If you fail to access resources leave a comment for maintainers to install permissions or reinstall the Github app, or visit https://chatcody.com to learn more`,
+            `,
       },
     ];
-
-    console.log(initialMessages[0].content);
 
     await claude.recursiveClaudeCall(
       { octokit, owner, repo },
