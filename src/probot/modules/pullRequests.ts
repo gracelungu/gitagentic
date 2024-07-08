@@ -22,7 +22,7 @@ export const handlePullRequests = (app: Probot) => {
   ];
 
   app.on(
-    ["pull_request.reopened", "pull_request.labeled"],
+    ["pull_request.opened", "pull_request.reopened", "pull_request.labeled"],
     async (context: any) => {
       const { octokit } = context;
       const { title, body, user, number, head, base, labels } =
@@ -63,7 +63,10 @@ export const handlePullRequests = (app: Probot) => {
       const initialMessages = [
         {
           role: "user",
-          content: `New pull request up for review:
+          content: `
+          Be brief and only review if necessary, otherwise just comment LGTM.
+          use the function to addLineCommentToPullRequest to comment on each file changed
+          New pull request up for review:
               - Title: '${title}'
               - By: ${user.login}
               - PR #: ${number}
@@ -81,7 +84,7 @@ export const handlePullRequests = (app: Probot) => {
         
               Only comment if there are discrepancies to address, and make your feedback short and concise. 
               If you fail to access resources leave a comment for maintainers to install permissions or reinstall the Github app.
-              At the end write a last comment telling to learn more about the Github app chatcody at https://chatcody.com and that it can now contribute with code from raised issues and PRs`,
+              `,
         },
       ];
 
@@ -96,36 +99,28 @@ export const handlePullRequests = (app: Probot) => {
   );
 };
 
-async function fetchPRCommentConversation(commentId: number, context: any) {
-  let thread: { role: string; content: string }[] = [];
-  let currentCommentId = commentId;
-
-  while (currentCommentId) {
-    const { data: comment } = await context.octokit.request(
-      "GET /repos/{owner}/{repo}/pulls/comments/{comment_id}",
+async function fetchPRReviewConversation(reviewId: number, context: any) {
+  try {
+    const { data: review } = await context.octokit.request(
+      "GET /repos/{owner}/{repo}/pulls/{pull_number}/reviews/{review_id}",
       {
         owner: context.payload.repository.owner.login,
         repo: context.payload.repository.name,
-        comment_id: currentCommentId,
+        pull_number: context.payload.pull_request.number,
+        review_id: reviewId,
       }
     );
 
-    thread.unshift({
-      role: comment.user.login === process.env.BOT_NAME ? "assistant" : "user",
-      content:
-        comment.user.login === process.env.BOT_NAME
-          ? comment.body
-          : `@${comment.user.login} said: ${comment.body}`,
-    });
-
-    currentCommentId = comment.in_reply_to_id;
+    return `Reviewer: @${review.user.login} said: ${review.body}`;
+  } catch (error) {
+    console.error(`Failed to fetch review conversation: ${error}`);
+    return [];
   }
-
-  return thread;
 }
 
+
 export const handlePullRequestsComments = (app: Probot) => {
-  app.on("pull_request_review_comment.created", async (context: any) => {
+  app.on("pull_request_review.submitted", async (context: any) => {
     if (process.env.HANDLE_PULL_REQUEST !== "yes") {
       return console.log("PULL_REQUESTS are disabled!");
     }
@@ -135,37 +130,15 @@ export const handlePullRequestsComments = (app: Probot) => {
 
     const claude = new Claude();
 
-    const { comment } = payload;
-    const pullNumber = comment.pull_request_url.split("/").pop();
-    const commentAuthor = comment.user.login;
+    const { review } = payload;
+    const pullNumber = review.pull_request_url.split("/").pop();
+    const reviewAuthor = review.user.login;
     const botName = process.env.BOT_NAME;
 
     if (
-      commentAuthor.includes(String(botName).toLowerCase()) ||
-      commentAuthor.includes("chatcody") ||
-      commentAuthor === "devreviewchat"
+      reviewAuthor.includes(String(botName).toLowerCase())
     )
       return;
-
-    // if (comment.in_reply_to_id) {
-    //   const { data: originalComment } = await octokit.request(
-    //     "GET /repos/{owner}/{repo}/pulls/comments/{comment_id}",
-    //     {
-    //       owner,
-    //       repo: payload.repository.name,
-    //       comment_id: comment.in_reply_to_id,
-    //     }
-    //   );
-
-    //   console.log({ originalAuthor: originalComment.user.login });
-
-    //   if (
-    //     originalComment.user.login.includes(String(botName).toLowerCase()) ||
-    //     originalComment.user.login.includes("chatcody")
-    //   ) {
-    //     return;
-    //   }
-    // }
 
     const { data: pullRequest } = await octokit.request(
       "GET /repos/{owner}/{repo}/pulls/{pull_number}",
@@ -201,8 +174,8 @@ export const handlePullRequestsComments = (app: Probot) => {
       .map((file) => `Path: ${file.path}\nPatch: ${file.patch}`)
       .join("\n\n");
 
-    const existingConversation = await fetchPRCommentConversation(
-      comment.id,
+    const reviewMessage = await fetchPRReviewConversation(
+      review.id,
       context
     );
 
@@ -216,7 +189,7 @@ export const handlePullRequestsComments = (app: Probot) => {
     const initialMessages = [
       {
         role: "user",
-        content: `New comment ID: ${comment.id} on PR:
+        content: `New review ID: ${review.id} on PR:
           - Title: '${title}'
           - By: ${user.login}
           - PR #: ${number}
@@ -225,16 +198,18 @@ export const handlePullRequestsComments = (app: Probot) => {
           - Head: ${headName}
           - Base: ${baseName}
           Patches and paths:\n\n${patchStrings}.
+
+          Review:
+          ${reviewMessage}
           
           Tasks:
-          1. Reply to comments using comment id: ${comment.id} if they are about your changes.
+          1. Reply to reviews using review id: ${review.id} if they are about your changes.
           2. Make needed code adjustments based on reviews.
     
           Only comment if there are discrepancies to address, and make your feedback short and concise.
           If you fail to access resources leave a comment for maintainers to install permissions or reinstall the Github app.
-          At the end write a last comment telling to learn more about the Github app chatcody at https://chatcody.com and that it can now contribute with code from raised issues and PRs`,
-      },
-      ...existingConversation,
+          `,
+      }
     ];
 
     const functions = [
@@ -256,3 +231,4 @@ export const handlePullRequestsComments = (app: Probot) => {
     );
   });
 };
+

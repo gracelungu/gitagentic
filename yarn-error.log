@@ -28,7 +28,7 @@ Trace:
 
 npm manifest: 
   {
-    "name": "chatcody",
+    "name": "gitagentic",
     "version": "1.0.0",
     "description": "",
     "main": "index.js",
