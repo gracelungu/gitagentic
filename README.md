@@ -8,31 +8,40 @@ The primary motivation behind Gitagentic is to streamline and automate common ta
 
 ## Features
 
+Gitagentic is a GitHub App that handles the following events:
+- Opened issues
+- New pull requests
+- Comments on pull requests
+
+The bot provides:
 - Automated issue handling
 - Pull request management and review assistance
 - Intelligent code analysis and suggestions
 - Documentation generation and maintenance
-- GitHub installation management
 
 ## Installation
 
-1. Clone the repository:
+1. Install the Gitagentic GitHub App:
+   Visit https://github.com/apps/gitagentic and follow the installation instructions for your repository.
+
+2. Clone the repository:
    ```
-   git clone https://github.com/your-username/gitagentic.git
+   git clone https://github.com/gracelungu/gitagentic.git
    cd gitagentic
    ```
 
-2. Install dependencies:
+3. Install dependencies:
    ```
    yarn install
    ```
 
-3. Copy the `.env.example` file to `.env` and fill in the required environment variables:
+4. Copy the `.env.example` file to `.env`:
    ```
    cp .env.example .env
    ```
+   The `.env.example` file already contains the necessary environment variables. You only need to add the `ANTHROPIC_API_KEY` for Claude 3 AI integration.
 
-4. Build the project:
+5. Build the project:
    ```
    yarn build
    ```
@@ -61,11 +70,13 @@ yarn dev
 
 ## Configuration
 
-Gitagentic uses environment variables for configuration. Make sure to set up the following in your `.env` file:
+Gitagentic uses environment variables for configuration. The `.env.example` file contains the necessary environment variables:
 
 - `GITHUB_APP_ID`: Your GitHub App ID
 - `GITHUB_PRIVATE_KEY`: Your GitHub App's private key
 - `GITHUB_WEBHOOK_SECRET`: Webhook secret for your GitHub App
+
+You need to add:
 - `ANTHROPIC_API_KEY`: API key for Claude 3 AI integration
 
 ## Contributing
