@@ -60,6 +60,36 @@ For development with hot-reloading:
 yarn dev
 ```
 
+### How Gitagentic Works
+
+Gitagentic listens to the following GitHub events:
+
+1. Issue Creation: When a new issue is created, the bot will automatically pick it up and create a corresponding pull request to address the issue.
+
+2. Pull Request Creation: When a new pull request is created, the bot will review it automatically, providing suggestions and comments.
+
+3. Pull Request Review Comments: When a review comment is added to a pull request, the bot can jump in to provide additional comments or even add changes to the pull request.
+
+### Configuration
+
+Gitagentic uses environment variables for configuration. The following variables help configure the bot's behavior:
+
+- `HANDLE_ISSUES`: Set to "yes" to enable the bot to handle issues.
+- `BOT_NAME`: The name of the bot (e.g., "gitagentic").
+- `WITH_LABEL`: Set to "yes" to make the bot only respond to issues and pull requests with a specific label. The label should match the `BOT_NAME`.
+- `HANDLE_PULL_REQUEST`: Set to "yes" to enable the bot to handle pull requests.
+
+Example configuration in your `.env` file:
+
+```
+HANDLE_ISSUES=yes
+BOT_NAME=gitagentic
+WITH_LABEL=no
+HANDLE_PULL_REQUEST=yes
+```
+
+If `WITH_LABEL` is set to "yes", you need to add a label with the same name as `BOT_NAME` to your GitHub repository. The bot will only interact with issues and pull requests that have this label.
+
 ## Project Structure
 
 - `src/index.ts`: Main entry point of the application
